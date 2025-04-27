@@ -2,8 +2,16 @@ import torch
 from torch import nn
 
 
+def make_4d_1d(input: torch.Tensor):
+    return input.view(input.shape[0], input.shape[1], input.shape[2] * input.shape[3])
+
+
+def make_3d_1d(input: torch.Tensor):
+    return input.view(input.shape[0] * input.shape[1], input.shape[2])
+
+
 class BatchNorm1d(nn.Module):
-    def __init__(self, alpha, training: bool = False):
+    def __init__(self, alpha: float = 0.5, training: bool = False):
         super(BatchNorm1d, self).__init__()
         self.alpha = alpha
         self.EMA = 0  # agrigator for moving average
@@ -11,7 +19,7 @@ class BatchNorm1d(nn.Module):
         self.gamma = nn.Parameter(torch.tensor(1.), requires_grad=True)  # learnable scale
         self.betta = nn.Parameter(torch.tensor(0.), requires_grad=True)  # learnable bias
 
-    def forward(self, batch):
+    def forward(self, batch: torch.Tensor):
         M = torch.mean(batch, dim=(0, 1))
 
         if self.training:
