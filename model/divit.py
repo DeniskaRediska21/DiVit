@@ -58,7 +58,7 @@ class DiVitClassifier(nn.Module):
 
 if __name__ == '__main__':
     x = torch.rand((3, 1039, 1039))
-    divit_classifier = DiVitClassifier(n_blocks=1, n_heads=2, n_class_tokens=1)
-    logits = divit_classifier(x)
+    divit_classifier = DiVitClassifier(n_blocks=2, n_heads=10, n_class_tokens=1, hidden_size=2048).cuda()
+    logits = divit_classifier(x.cuda())
     breakpoint()
 

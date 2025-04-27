@@ -55,7 +55,7 @@ class EncoderBlock(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, n_blocks: int = 1, n_heads: int = 1, input_len: int = 256, hidden_size: int = 128, training: bool = False, alpha: float = 0.5, n_linear: int = 1):
         super(Encoder, self).__init__()
-        self.blocks = nn.ModuleList([EncoderBlock(n_heads=n_heads, input_len=input_len, hidden_size=hidden_size, training=training, alpha=alpha, n_linear=n_linear)])
+        self.blocks = nn.ModuleList([EncoderBlock(n_heads=n_heads, input_len=input_len, hidden_size=hidden_size, training=training, alpha=alpha, n_linear=n_linear) for _ in range(n_blocks)])
 
     def forward(self, input):
         for block in self.blocks:
