@@ -3,7 +3,7 @@ import torchvision
 
 
 def get_MNIST_dataloader(batch_size, shuffle: bool = True):
-    transform=torchvision.transforms.v2.Compose([
+    transform=torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize((0.1307,), (0.3081,)),
     ])

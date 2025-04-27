@@ -12,5 +12,8 @@ from model.divit import DiVitClassifier
 
 train_dataloader, val_dataloader = get_MNIST_dataloader(1)
 
-model = DiVitClassifier(n_blocks=2, n_heads=10, n_class_tokens=1, hidden_size=2048, conv_kernel_size=16).cuda()
+model = DiVitClassifier(n_blocks=2, n_heads=10, n_class_tokens=1, hidden_size=2048, conv_kernel_size=1, n_channels=1).cuda()
+
+image, target = next(iter(train_dataloader))
+ligits = model(image.squeeze(0).cuda())
 
