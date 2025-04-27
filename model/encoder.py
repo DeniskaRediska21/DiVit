@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from utils import BatchNorm1d
+from model.utils import BatchNorm1d
 
 
 class Attention(nn.Module):

@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 
-from utils import make_3d_1d, make_4d_1d
-from positional_embedding import PositionalEmbeddingLearnable
-from encoder import Encoder
+from model.utils import make_3d_1d, make_4d_1d
+from model.positional_embedding import PositionalEmbeddingLearnable
+from model.encoder import Encoder
 
 class DiVit(nn.Module):
     def __init__(self, n_blocks: int = 1, n_heads: int = 1, patch_size: int = 16, hidden_size: int = 128, training: bool = False, alpha: float = 0.5, n_linear: int = 1, num_embeddings: int = 100, n_class_tokens: int = 0, n_channels: int = 3, conv_kernel_size: int = 16):
