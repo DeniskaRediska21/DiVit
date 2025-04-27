@@ -4,13 +4,13 @@ from torch import nn
 from model.utils import make_3d_1d, make_4d_1d
 from model.positional_embedding import PositionalEmbeddingLearnable
 from model.encoder import Encoder
-from torchvision.transforms.functional import center_crop
+from torchvision.transforms.functional import center_crop, resize
 
 class DiVit(nn.Module):
     def __init__(self, n_blocks: int = 1, n_heads: int = 1, patch_size: int = 16, hidden_size: int = 128, training: bool = False, alpha: float = 0.5, n_linear: int = 1, num_embeddings: int = 100, n_class_tokens: int = 0, n_channels: int = 3, conv_kernel_size: int = 16):
         super(DiVit, self).__init__()
 
-        self.patch_size = 16
+        self.patch_size = patch_size
         input_len = self.patch_size ** 2
 
         self.input_conv = nn.Conv2d(n_channels, 1, (conv_kernel_size, conv_kernel_size))
@@ -19,7 +19,7 @@ class DiVit(nn.Module):
 
         self.encoder = Encoder(n_blocks=n_blocks, n_heads=n_heads, input_len=input_len, hidden_size=hidden_size, training=training, alpha=alpha, n_linear=n_linear)
 
-        self.class_token = None if n_class_tokens == 0 else nn.Parameter(torch.rand((n_class_tokens, input_len)))
+        self.class_token = None if n_class_tokens == 0 else nn.Parameter(torch.rand((n_class_tokens, input_len)), requires_grad=True)
 
     def split_into_patches(self, input):
         return input.unfold(0, self.patch_size, self.patch_size).unfold(1, self.patch_size, self.patch_size).contiguous()
@@ -44,6 +44,9 @@ class DiVitClassifier(nn.Module):
         self.patch_size = patch_size
         self.conv_kernel_size = conv_kernel_size
         input_len = patch_size ** 2
+
+        self.layer_norm = nn.LayerNorm(input_len)
+
         modules = []
         linear_sizes = torch.linspace(input_len, n_classes, steps=classifier_layers + 1, dtype=int)
         for idx in range(len(linear_sizes) - 1):
@@ -51,16 +54,21 @@ class DiVitClassifier(nn.Module):
             if idx != len(linear_sizes) - 2:
                 modules.append(nn.ReLU())
 
+
         self.classifier_head = nn.Sequential(*modules)
         self.vit = DiVit(n_blocks=n_blocks, n_heads=n_heads, patch_size=patch_size, hidden_size=hidden_size, training=training, alpha=alpha, n_linear=n_linear, num_embeddings=num_embeddings, n_class_tokens=n_class_tokens, n_channels=n_channels, conv_kernel_size=conv_kernel_size)
 
     def forward(self, input):
         h_new = self.patch_size * (input.shape[-2] // self.patch_size) + self.patch_size * ((input.shape[-2] % self.patch_size) > 0)+ self.conv_kernel_size - 1
         w_new = self.patch_size * (input.shape[-1] // self.patch_size) + self.patch_size * ((input.shape[-1] % self.patch_size) > 0)+ self.conv_kernel_size - 1
-        input = center_crop(input, (h_new, w_new))
+
+        # input = center_crop(input, (h_new, w_new))
+        input = resize(input, (h_new, w_new))
 
         embeddings = self.vit(input)
-        return self.classifier_head(embeddings[-1])
+        embeddings = self.layer_norm(embeddings)
+        logits = self.classifier_head(embeddings[-1])
+        return logits.softmax(dim=0)
         
 
 if __name__ == '__main__':

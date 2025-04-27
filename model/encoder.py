@@ -6,18 +6,21 @@ from model.utils import BatchNorm1d
 class Attention(nn.Module):
     def __init__(self, input_len: int = 256, hidden_size: int = 128):
         super(Attention, self).__init__()
-        self.Q = nn.Parameter(torch.randn((input_len, hidden_size)))
-        self.K = nn.Parameter(torch.randn((input_len, hidden_size)))
-        self.V_down = nn.Parameter(torch.randn((input_len, hidden_size)))
-        self.V_up = nn.Parameter(torch.randn((hidden_size, input_len)))
+        self.Q = nn.Parameter(torch.randn((input_len, hidden_size)), requires_grad=True)
+        self.K = nn.Parameter(torch.randn((input_len, hidden_size)), requires_grad=True)
+        self.V_down = nn.Parameter(torch.randn((input_len, hidden_size)), requires_grad=True)
+        self.V_up = nn.Parameter(torch.randn((hidden_size, input_len)), requires_grad=True)
     def forward(self, input):
-        query = input.matmul(self.Q)
-        key = input.matmul(self.K)
-        attention_matrix = query.matmul(key.T)
-        attention_matrix = torch.softmax(attention_matrix, dim = 1)
+        query = input @ self.Q
+        key = input @ self.K
+        V = self.V_down @ self.V_up
+        input = input @ V
 
-        dE = (attention_matrix @ (input @ self.V_down)) @ self.V_up
-        return dE
+        attention_matrix = query @ key.transpose(-2, -1)
+        attention_matrix = attention_matrix.softmax(dim=-1)
+
+        input = attention_matrix @ input
+        return input
 
 
 class MultiheadedAttention(nn.Module):
@@ -28,28 +31,30 @@ class MultiheadedAttention(nn.Module):
     def forward(self, input):
         dE = self.attention_blocks[0](input)
         for i in range(len(self.attention_blocks) - 1):
-            dE += self.attention_blocks[i + 1](input)
+            dE = dE + self.attention_blocks[i + 1](input)
         return dE
 
 
 class EncoderBlock(nn.Module):
     def __init__(self, n_heads: int = 1, input_len: int = 256, hidden_size: int = 128, training: bool = False, alpha: float = 0.5, n_linear: int = 1):
         super(EncoderBlock, self).__init__()
-        self.batch_norm1 = BatchNorm1d(alpha=alpha, training=training)
-        self.batch_norm2 = BatchNorm1d(alpha=alpha, training=training)
-        self.linears = nn.ModuleList([nn.Linear(input_len, input_len) for _ in range(n_linear)])
-        self.activations = nn.ModuleList([nn.ReLU() for _ in range(n_linear)])
+        self.batch_norm1 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
+        self.batch_norm2 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
         self.attention = MultiheadedAttention(n_heads=n_heads, input_len=input_len, hidden_size=hidden_size)
+
+        modules = []
+        for _ in range(n_linear):
+            modules.append(nn.Linear(input_len, input_len))
+            modules.append(nn.ReLU())
+
+        self.MLP = nn.Sequential(*modules)
 
     def forward(self, input):
         input = self.batch_norm1(input)
         dE = self.attention(input)
-        input += dE
+        input = input + dE
         input = self.batch_norm2(input)
-
-        for idx in range(len(input)):
-            for linear, activation in zip(self.linears, self.activations):
-                input[idx] = activation(linear(input[idx]))
+        input = self.MLP(input)
         return input
 
 class Encoder(nn.Module):
