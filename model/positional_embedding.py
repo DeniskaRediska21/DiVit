@@ -14,7 +14,7 @@ class PositionalEmbeddingLearnable(nn.Module):
         p_cols = self.embed_col(torch.arange(w, device=input.device))
 
         pos = p_cols.unsqueeze(0).repeat(h, 1, 1) + p_rows.unsqueeze(1).repeat(1, w, 1)
-        return input + pos
+        return pos
 
 
 if __name__ == '__main__':
