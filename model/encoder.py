@@ -69,15 +69,18 @@ class MultiheadedAttention(nn.Module):
         dE = self.attention_blocks[0](input)
         for i in range(len(self.attention_blocks) - 1):
             dE = dE + self.attention_blocks[i + 1](input)
-        dE = dE / (len(self.attention_blocks) * input.shape[1])
+        dE = dE / (len(self.attention_blocks))
+        # dE = dE / (len(self.attention_blocks) * input.shape[1])
         return dE
 
 
 class EncoderBlock(nn.Module):
     def __init__(self, n_heads: int = 1, input_len: int = 256, hidden_size: int = 128, training: bool = False, alpha: float = 0.5, n_linear: int = 1):
         super(EncoderBlock, self).__init__()
-        self.batch_norm1 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
-        self.batch_norm2 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
+        # self.batch_norm1 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
+        # self.batch_norm2 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
+        self.norm1 = nn.LayerNorm(input_len)
+        self.norm2 = nn.LayerNorm(input_len)
         self.attention = MultiheadedAttention(n_heads=n_heads, input_len=input_len, hidden_size=hidden_size)
 
         modules = []
@@ -88,10 +91,11 @@ class EncoderBlock(nn.Module):
         self.MLP = nn.Sequential(*modules)
 
     def forward(self, input):
-        # input = self.batch_norm1(input)
+
+        input = self.norm1(input)
         dE = self.attention(input)
         input = input + dE
-        # input = self.batch_norm2(input)
+        input = self.norm2(input)
         input = self.MLP(input)
         return input
 

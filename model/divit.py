@@ -63,8 +63,8 @@ class DiVitClassifier(nn.Module):
         h_new = self.patch_size * (input.shape[-2] // self.patch_size) + self.patch_size * ((input.shape[-2] % self.patch_size) > 0)+ self.conv_kernel_size - 1
         w_new = self.patch_size * (input.shape[-1] // self.patch_size) + self.patch_size * ((input.shape[-1] % self.patch_size) > 0)+ self.conv_kernel_size - 1
 
-        # input = center_crop(input, (h_new, w_new))
-        input = resize(input, (h_new, w_new))
+        input = center_crop(input, (h_new, w_new))
+        # input = resize(input, (h_new, w_new))
 
         embeddings = self.vit(input)
         logits = self.classifier_head(embeddings[:, -1])
