@@ -44,7 +44,7 @@ EPOCHS = 20
 
 train_dataloader, val_dataloader = get_MNIST_dataloader(100)
 
-model = DiVitClassifier(n_blocks=2, n_heads=5, n_class_tokens=1, hidden_size=128, conv_kernel_size=1, n_channels=1, patch_size=14, n_classes=10, n_linear=1, classifier_layers=4, num_embeddings=20).cuda()
+model = DiVitClassifier(n_blocks=2, n_heads=5, n_class_tokens=1, hidden_size=128, conv_kernel_size=5, n_channels=1, patch_size=10, n_classes=10, n_linear=1, classifier_layers=4, num_embeddings=20).cuda()
 
 loss = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=LEARNING_RATE)

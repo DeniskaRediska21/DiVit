@@ -11,13 +11,11 @@ class Attention(nn.Module):
         self.K = nn.Parameter(torch.randn((1, input_len, hidden_size)), requires_grad=True)
         self.V_down = nn.Parameter(torch.randn((1, input_len, hidden_size)), requires_grad=True)
         self.V_up = nn.Parameter(torch.randn((1, hidden_size, input_len)), requires_grad=True)
-        self.V  =nn.Parameter(torch.randn((1, input_len, input_len)), requires_grad=True)
         self.scaler = torch.tensor(input_len, dtype=torch.float)
     def forward(self, input):
         query = input @ self.Q
         key = input @ self.K
-        # V = self.V_down @ self.V_up
-        V = self.V
+        V = self.V_down @ self.V_up
         value = input @ V
 
         attention_matrix = query @ key.transpose(-2, -1) / self.scaler
@@ -81,6 +79,10 @@ class EncoderBlock(nn.Module):
         # self.batch_norm2 = BatchNorm1d(alpha=alpha, training=training, input_len=input_len)
         self.norm1 = nn.LayerNorm(input_len)
         self.norm2 = nn.LayerNorm(input_len)
+        self.scale1 = nn.Parameter(torch.tensor(1.), requires_grad=True)
+        self.offset1 = nn.Parameter(torch.tensor(0.), requires_grad=True)
+        self.scale2 = nn.Parameter(torch.tensor(1.), requires_grad=True)
+        self.offset2 = nn.Parameter(torch.tensor(0.), requires_grad=True)
         self.attention = MultiheadedAttention(n_heads=n_heads, input_len=input_len, hidden_size=hidden_size)
 
         modules = []
@@ -92,10 +94,10 @@ class EncoderBlock(nn.Module):
 
     def forward(self, input):
 
-        input = self.norm1(input)
+        input = self.norm1(input) * self.scale1 + self.offset1
         dE = self.attention(input)
         input = input + dE
-        input = self.norm2(input)
+        input = self.norm2(input) * self.scale2 + self.offset2
         input = self.MLP(input)
         return input
 
