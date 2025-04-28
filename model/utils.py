@@ -3,11 +3,11 @@ from torch import nn
 
 
 def make_4d_1d(input: torch.Tensor):
-    return input.view(input.shape[0], input.shape[1], input.shape[2] * input.shape[3])
+    return input.view(-1, input.shape[-4], input.shape[-3], input.shape[-2] * input.shape[-1])
 
 
 def make_3d_1d(input: torch.Tensor):
-    return input.view(input.shape[0] * input.shape[1], input.shape[2])
+    return input.view(-1, input.shape[-3] * input.shape[-2], input.shape[-1])
 
 
 class BatchNorm1d(nn.Module):

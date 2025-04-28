@@ -15,23 +15,23 @@ from model.divit import DiVitClassifier
 def epoch(model, dataloader, optimizer: None = None, loss_func: None = None, training: bool = True):
     pbar = tqdm(dataloader)
     for image, target in pbar:
-        image = image[0].cuda() / 255
+        image = image.cuda()
         target = target.cuda()
 
         if training:
+            optimizer.zero_grad()
             logits = model(image)
-            loss = loss_func(logits.unsqueeze(0), target)
-            print(torch.argmax(torch.softmax(logits, dim=0)).detach().cpu().item(), target.detach().cpu().item())
-            print(logits.detach().cpu().numpy())
+            loss = loss_func(logits, target)
+            print(logits.softmax(dim=1).argmax(dim=1).detach().cpu().numpy(), target.detach().cpu().numpy())
+            # print(logits.detach().cpu().numpy())
         else:
             with torch.no_grad():
                 logits = model(image)
                 loss = loss_func(logits.unsqueeze(0), target)
 
         if training:
-            loss.backward(retain_graph=True)
+            loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
             pbar.set_description(f'Training, loss {loss}:')
         else:
             pbar.set_description(f'Validation, loss {loss}:')
@@ -39,12 +39,12 @@ def epoch(model, dataloader, optimizer: None = None, loss_func: None = None, tra
 
 
 torch.autograd.set_detect_anomaly(True)
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-3
 EPOCHS = 20
 
-train_dataloader, val_dataloader = get_MNIST_dataloader(1)
+train_dataloader, val_dataloader = get_MNIST_dataloader(100)
 
-model = DiVitClassifier(n_blocks=1, n_heads=2, n_class_tokens=1, hidden_size=128, conv_kernel_size=16, n_channels=1, patch_size=14, n_classes=10, n_linear=3, classifier_layers=2).cuda()
+model = DiVitClassifier(n_blocks=1, n_heads=5, n_class_tokens=1, hidden_size=128, conv_kernel_size=5, n_channels=1, patch_size=14, n_classes=10, n_linear=1, classifier_layers=3, num_embeddings=10).cuda()
 
 loss = CrossEntropyLoss()
 optimizer = Adam(model.parameters(), lr=LEARNING_RATE)

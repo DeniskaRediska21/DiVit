@@ -7,8 +7,9 @@ class PositionalEmbeddingLearnable(nn.Module):
 
         self.embed_row = torch.nn.Embedding(num_embeddings, embedding_dim)
         self.embed_col = torch.nn.Embedding(num_embeddings, embedding_dim)
+
     def forward(self, input):
-        h, w, *_ = input.shape
+        _, h, w, *_ = input.shape
 
         p_rows = self.embed_row(torch.arange(h, device=input.device))
         p_cols = self.embed_col(torch.arange(w, device=input.device))
